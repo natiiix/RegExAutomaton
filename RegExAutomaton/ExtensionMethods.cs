@@ -69,6 +69,8 @@ namespace RegExAutomaton
 
         public static string SubstringBetween(this string str, int start, int end) => str.Substring(start, end - start + 1);
 
+        public static string SubstringBefore(this string str, int end, bool includeEnd = false) => str.Substring(0, end + (includeEnd ? 1 : 0));
+
         public static bool IsEscaped(this string str, int index)
         {
             bool escaped = false;
@@ -156,15 +158,17 @@ namespace RegExAutomaton
 
         public static Quantifier GetQuantifier(this string str, int index)
         {
-            if (str.ContainsAt(index, Meta.ZeroOrOne))
+            int quantIdx = index + 1;
+
+            if (str.ContainsAt(quantIdx, Meta.ZeroOrOne))
             {
                 return Quantifier.ZeroOrOne;
             }
-            else if (str.ContainsAt(index, Meta.ZeroOrMore))
+            else if (str.ContainsAt(quantIdx, Meta.ZeroOrMore))
             {
                 return Quantifier.ZeroOrMore;
             }
-            else if (str.ContainsAt(index, Meta.OneOrMore))
+            else if (str.ContainsAt(quantIdx, Meta.OneOrMore))
             {
                 return Quantifier.OneOrMore;
             }
@@ -172,6 +176,84 @@ namespace RegExAutomaton
             {
                 return Quantifier.None;
             }
+        }
+
+        public static string GetString(this Quantifier quantifier)
+        {
+            switch (quantifier)
+            {
+                case Quantifier.ZeroOrOne:
+                    return Meta.ZeroOrOne;
+
+                case Quantifier.ZeroOrMore:
+                    return Meta.ZeroOrMore;
+
+                case Quantifier.OneOrMore:
+                    return Meta.OneOrMore;
+
+                case Quantifier.None:
+                    return string.Empty;
+
+                default:
+                    throw new ArgumentException();
+            }
+        }
+
+        public static List<Group> SplitIntoGroups(this string str)
+        {
+            List<int> groupStarts = str.FindUnescaped(Meta.GroupStart, true);
+            List<int> groupEnds = str.FindUnescaped(Meta.GroupEnd, true);
+
+            if (groupStarts.Count != groupEnds.Count)
+            {
+                throw new ArgumentException();
+            }
+
+            List<Group> groups = new List<Group>();
+
+            int groupCount = groupStarts.Count;
+
+            if (groupCount == 0)
+            {
+                return new List<Group>() { new Group(str, false) };
+            }
+
+            int nextGroupStart = 0;
+
+            for (int i = 0; i < groupCount; i++)
+            {
+                int start = groupStarts[i];
+
+                if (start > nextGroupStart)
+                {
+                    groups.Add(new Group(str.SubstringBetween(nextGroupStart, start - 1), false));
+                }
+
+                int end = groupEnds[i];
+                int innerStart = start + 1;
+
+                bool nonCapture = str.ContainsAt(start + 1, Meta.NonCapture);
+
+                if (nonCapture)
+                {
+                    innerStart += Meta.NonCapture.Length;
+                }
+
+                Quantifier quantifier = str.GetQuantifier(end);
+
+                string value = str.SubstringBetween(innerStart, end - 1);
+
+                groups.Add(new Group(value, !nonCapture, quantifier));
+
+                nextGroupStart = end + 1 + quantifier.GetString().Length;
+            }
+
+            if (nextGroupStart < str.Length)
+            {
+                groups.Add(new Group(str.Substring(nextGroupStart), true));
+            }
+
+            return groups;
         }
     }
 }

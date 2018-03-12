@@ -63,51 +63,28 @@ namespace RegExAutomaton
 
         private void ProcessPattern(string pattern)
         {
-            List<int> orIndices = pattern.FindUnescaped(Meta.Or, true);
+            // TODO:
+            // - Create an interface for both alternatives and groups.
+            // - Split the pattern into elementary groups and alternatives.
+            // - Process the elementary blocks one by one.
 
-            if (orIndices.Count > 0)
+            string[] alternatives = pattern.SplitOnUnescaped(Meta.Or, true);
+
+            foreach (string alt in alternatives)
             {
-                string[] alternatives = pattern.SplitOnIndices(orIndices);
+                List<Group> groups = alt.SplitIntoGroups();
 
-                foreach (string alt in alternatives)
+                if (groups.Count > 1)
                 {
-                    // TODO
+                    foreach (Group g in groups)
+                    {
+                    }
                 }
-
-                return;
+                else
+                {
+                    // TODO: Process the group
+                }
             }
-        }
-
-        private static Group[] ExtractGroups(string pattern)
-        {
-            List<int> groupStarts = pattern.FindUnescaped(Meta.GroupStart, true);
-            List<int> groupEnds = pattern.FindUnescaped(Meta.GroupEnd, true);
-
-            if (groupStarts.Count != groupEnds.Count)
-            {
-                throw new ArgumentException();
-            }
-
-            int groupCount = groupStarts.Count;
-            Group[] groups = new Group[groupCount];
-
-            for (int i = 0; i < groupCount; i++)
-            {
-                int start = groupStarts[i];
-                int end = groupEnds[i];
-
-                Quantifier quantifier = pattern.GetQuantifier(end + 1);
-                bool nonCapture = pattern.ContainsAt(start + 1, Meta.NonCapture);
-
-                int innerStart = start + (nonCapture ? 3 : 1);
-                int length = end - innerStart;
-
-                string value = pattern.Substring(innerStart, length);
-
-                groups[i] = new Group(value, !nonCapture, quantifier);
-            }
-
-            return groups;
         }
     }
 }
