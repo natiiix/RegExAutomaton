@@ -216,5 +216,16 @@ namespace UnitTest
             Assert.AreEqual(str, str.SubstringBetween(0, 5));
             Assert.AreEqual("cde", str.SubstringBetween(2, 4));
         }
+
+        [TestMethod]
+        public void IndexOfTest()
+        {
+            int[] arr = new int[] { 10, 20, 30, 40, 50, 60, 70 };
+
+            for (int i = 0, len = arr.Length; i < len; i++)
+            {
+                Assert.AreEqual(i, arr.IndexOf(arr[i]));
+            }
+        }
     }
 }

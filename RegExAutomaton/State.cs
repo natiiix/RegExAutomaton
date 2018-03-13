@@ -4,7 +4,7 @@
     {
         public bool Ending { get; private set; }
 
-        public State(bool ending)
+        public State(bool ending = false)
         {
             Ending = ending;
         }

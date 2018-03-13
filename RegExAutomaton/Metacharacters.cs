@@ -2,6 +2,9 @@
 {
     public static class Meta
     {
+        // Escape and non-capture symbols are not included
+        public static string[] All { get => new string[] { StringStart, StringEnd, GroupStart, GroupEnd, Or, ZeroOrOne, ZeroOrMore, OneOrMore }; }
+
         public const string Escape = "\\";
 
         public const string StringStart = "^";

@@ -8,6 +8,37 @@ namespace RegExAutomaton
     {
         public static bool IndexInRange<T>(this IEnumerable<T> enumerable, int index) => index >= 0 && index < enumerable.Count();
 
+        public static int IndexOf<T>(this IEnumerable<T> enumerable, T item)
+        {
+            int index = -1;
+
+            for (int i = 0, len = enumerable.Count(); i < len; i++)
+            {
+                if (enumerable.ElementAt(i).Equals(item))
+                {
+                    if (index < 0)
+                    {
+                        index = i;
+                    }
+                    else
+                    {
+                        throw new ArgumentException();
+                    }
+                }
+            }
+
+            return index;
+        }
+
+        public static void RemoveLast<T>(this List<T> list) => list.RemoveAt(list.Count - 1);
+
+        public static T Pop<T>(this List<T> list)
+        {
+            T value = list.Last();
+            list.RemoveLast();
+            return value;
+        }
+
         public static bool ContainsAt(this string str, int index, string value)
         {
             int strLen = str.Length;
@@ -215,7 +246,7 @@ namespace RegExAutomaton
 
             if (groupCount == 0)
             {
-                return new List<Group>() { new Group(str, false) };
+                return null;
             }
 
             int nextGroupStart = 0;
