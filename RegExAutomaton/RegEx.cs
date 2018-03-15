@@ -37,7 +37,7 @@ namespace RegExAutomaton
 
         private int AddState()
         {
-            states.Add(new State());
+            states.Add(new State(states.Count));
             return LastStateIndex;
         }
 
@@ -210,7 +210,28 @@ namespace RegExAutomaton
                         for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
                         {
                             int branchEnd = branchEndStates.Pop();
-                            edges.Add(new Edge(branchEnd, lastDecisionState, string.Empty));
+
+                            if (edges.Exists(x => x.Origin == branchEnd))
+                            {
+                                edges.Add(new Edge(branchEnd, lastDecisionState, string.Empty));
+                            }
+                            else
+                            {
+                                foreach (Edge edge in edges.Where(x => x.Destination == branchEnd))
+                                {
+                                    edge.ChangeDestination(lastDecisionState);
+                                }
+
+                                states.RemoveAt(branchEnd);
+
+                                for (int k = 0, stateCount = states.Count; k < stateCount; k++)
+                                {
+                                    if (states[k].Id != k)
+                                    {
+                                        throw new Exception();
+                                    }
+                                }
+                            }
                         }
 
                         branchEndStates[branchEndStates.Count - 1] = decisionStates.Last();

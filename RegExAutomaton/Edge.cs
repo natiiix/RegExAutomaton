@@ -14,5 +14,10 @@
             Value = value;
             CaptureGroup = captureGroup;
         }
+
+        public void ChangeDestination(int destination)
+        {
+            Destination = destination;
+        }
     }
 }

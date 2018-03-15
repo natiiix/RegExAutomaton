@@ -92,14 +92,28 @@ namespace UnitTest
         [TestMethod]
         public void QuantifiedGroupTest()
         {
-            RegEx regex = new RegEx("^hello( |_)*world$");
-
-            string[] strings = { "helloworld", "hello world", "hello  world", "hello   world", "hello_world", "hello__world", "hello___world" };
-
-            foreach (string str in strings)
             {
-                Match match = regex.Match(str);
-                Assert.IsNotNull(match);
+                RegEx regex = new RegEx("^hello( |_)*world$");
+
+                string[] strings = { "helloworld", "hello world", "hello  world", "hello   world", "hello_world", "hello__world", "hello___world" };
+
+                foreach (string str in strings)
+                {
+                    Match match = regex.Match(str);
+                    Assert.IsNotNull(match);
+                }
+            }
+
+            {
+                RegEx regex = new RegEx("^x (abc*|de*f)* y$");
+
+                string[] strings = { "x  y", "x ab y", "x abc y", "x abccccc y", "x df y", "x def y", "x deeeeeef y", "x abdfabcccdeeeef y" };
+
+                foreach (string str in strings)
+                {
+                    Match match = regex.Match(str);
+                    Assert.IsNotNull(match);
+                }
             }
         }
     }
