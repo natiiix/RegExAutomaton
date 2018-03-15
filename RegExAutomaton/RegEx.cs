@@ -185,26 +185,27 @@ namespace RegExAutomaton
                 // Or
                 if (pattern.ContainsAtUnescaped(i, Meta.Or))
                 {
-                    if (sequence != string.Empty)
-                    {
-                        edges.Add(new Edge(branchEndStates.Last(), AddState(), sequence));
-                        branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
-                        branchEndStates.Add(decisionStates.Last());
-                        sequence = string.Empty;
-                    }
+                    PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
 
+                    branchEndStates.Add(decisionStates.Last());
                     step = Meta.Or.Length;
                 }
                 // Zero or more quantifier
                 else if (pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrMore))
                 {
-                    edges.Add(new Edge(branchEndStates.Last(), AddState(), sequence));
-                    branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
+                    PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
 
-                    sequence = string.Empty;
-                    step = 1 + Meta.ZeroOrMore.Length;
+                    // Creating the "zero or more" quantifier loop on a decision state
+                    // would result in "a*|zyx" matching "aaazyx"
+                    if (decisionStates.Contains(LastStateIndex))
+                    {
+                        // It is necessary to add an epsilon edge leading to the "zero or more" quantifier loop
+                        edges.Add(new Edge(LastStateIndex, AddState(), string.Empty));
+                        branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
+                    }
 
                     edges.Add(new Edge(LastStateIndex, LastStateIndex, pattern[i].ToString()));
+                    step = 1 + Meta.ZeroOrMore.Length;
                 }
                 // Unescaped escape character
                 else if (pattern.ContainsAtUnescaped(i, Meta.Escape))
@@ -219,16 +220,22 @@ namespace RegExAutomaton
                 }
             }
 
+            PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
+
+            // Mark the end state of each branch as an ending state
+            foreach (int endState in branchEndStates)
+            {
+                states[endState].Ending = true;
+            }
+        }
+
+        private void PushSequenceIfNotEmpty(ref string sequence, ref List<int> decisionStates, ref List<int> branchEndStates)
+        {
             if (sequence != string.Empty)
             {
                 edges.Add(new Edge(branchEndStates.Last(), AddState(), sequence));
                 branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
                 sequence = string.Empty;
-            }
-
-            foreach (int endState in branchEndStates)
-            {
-                states[endState].Ending = true;
             }
         }
 
@@ -238,7 +245,7 @@ namespace RegExAutomaton
 
             for (int i = 0, len = (fixedStart ? 0 : str.Length); i <= len; i++)
             {
-                if (IsMatch(str, i, startingState, ref fullCapture))
+                if (RecursiveMatch(str, i, startingState, ref fullCapture))
                 {
                     return new Match(fullCapture, i);
                 }
@@ -249,15 +256,15 @@ namespace RegExAutomaton
 
         public bool IsMatch(string str) => Match(str) != null;
 
-        private bool IsMatch(string str, int index, int state, ref string fullCapture)
+        private bool RecursiveMatch(string str, int index, int state, ref string fullCapture)
         {
             IEnumerable<Edge> availableEdges = edges.Where(x => x.Origin == state);
 
             foreach (Edge edge in availableEdges)
             {
-                if (str.ContainsAt(index, edge.Value) && IsMatch(str, index + edge.Value.Length, edge.Destination, ref fullCapture))
+                if (str.ContainsAt(index, edge.Value) && RecursiveMatch(str, index + edge.Value.Length, edge.Destination, ref fullCapture))
                 {
-                    fullCapture += edge.Value;
+                    fullCapture = edge.Value + fullCapture;
                     return true;
                 }
             }

@@ -30,6 +30,21 @@ namespace RegExAutomaton
             return index;
         }
 
+        public static T At<T>(this IEnumerable<T> enumerable, int index)
+        {
+            int count = enumerable.Count();
+            int positiveIndex = index < 0 ? count - index : index;
+
+            if (positiveIndex < count)
+            {
+                return enumerable.ElementAt(positiveIndex);
+            }
+            else
+            {
+                throw new IndexOutOfRangeException();
+            }
+        }
+
         public static void RemoveLast<T>(this List<T> list) => list.RemoveAt(list.Count - 1);
 
         public static T Pop<T>(this List<T> list)
