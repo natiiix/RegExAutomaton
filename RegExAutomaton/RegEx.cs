@@ -18,11 +18,6 @@ namespace RegExAutomaton
 
         public RegEx(string pattern)
         {
-            if (!CheckGroupStartEndCount(pattern))
-            {
-                throw new ArgumentException();
-            }
-
             fixedStart = pattern.StartsWith(Meta.StringStart);
             fixedEnd = pattern.EndsWith(Meta.StringEnd);
 
@@ -36,6 +31,7 @@ namespace RegExAutomaton
                 throw new ArgumentException();
             }
 
+            ProcessGroups(innerPattern);
             ProcessPattern(innerPattern);
         }
 
@@ -45,14 +41,14 @@ namespace RegExAutomaton
             return LastStateIndex;
         }
 
-        private static bool CheckGroupStartEndCount(string pattern)
+        private void ProcessGroups(string pattern)
         {
-            List<int> groupStarts = pattern.FindUnescaped(Meta.GroupStart, true);
-            List<int> groupEnds = pattern.FindUnescaped(Meta.GroupEnd, true);
+            List<int> groupStarts = pattern.FindUnescaped(Meta.GroupStart);
+            List<int> groupEnds = pattern.FindUnescaped(Meta.GroupEnd);
 
             if (groupStarts.Count != groupEnds.Count)
             {
-                return false;
+                throw new ArgumentException();
             }
 
             for (int i = 0, len = groupEnds.Count; i < len; i++)
@@ -61,11 +57,9 @@ namespace RegExAutomaton
 
                 if (groupStarts.Where(x => x < endIdx).Count() < i + 1)
                 {
-                    return false;
+                    throw new ArgumentException();
                 }
             }
-
-            return true;
         }
 
         //private void ProcessPattern(string pattern)
@@ -176,7 +170,8 @@ namespace RegExAutomaton
             startingState = AddState();
 
             List<int> decisionStates = new List<int>() { startingState };
-            List<int> branchEndStates = new List<int>() { decisionStates.Last() };
+            List<int> branchEndStates = new List<int>() { startingState };
+            List<int> branchesPerGroup = new List<int>() { 1 };
 
             string sequence = string.Empty;
 
@@ -188,9 +183,63 @@ namespace RegExAutomaton
                     PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
 
                     branchEndStates.Add(decisionStates.Last());
+                    branchesPerGroup[branchesPerGroup.Count - 1]++;
+
                     step = Meta.Or.Length;
                 }
-                // Zero or more quantifier
+                // Group start
+                else if (pattern.ContainsAtUnescaped(i, Meta.GroupStart))
+                {
+                    PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
+
+                    decisionStates.Add(LastStateIndex);
+                    branchEndStates.Add(LastStateIndex);
+                    branchesPerGroup.Add(1);
+
+                    step = Meta.GroupStart.Length;
+                }
+                // Group end
+                else if (pattern.ContainsAtUnescaped(i, Meta.GroupEnd))
+                {
+                    PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
+
+                    if (pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrMore))
+                    {
+                        int lastDecisionState = decisionStates.Last();
+
+                        for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
+                        {
+                            int branchEnd = branchEndStates.Pop();
+                            edges.Add(new Edge(branchEnd, lastDecisionState, string.Empty));
+                        }
+
+                        branchEndStates[branchEndStates.Count - 1] = decisionStates.Last();
+                        i += Meta.ZeroOrMore.Length;
+                    }
+                    else
+                    {
+                        int branchCount = branchesPerGroup.Last();
+
+                        if (branchCount > 1)
+                        {
+                            int newState = AddState();
+
+                            for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
+                            {
+                                int branchEnd = branchEndStates.Pop();
+                                edges.Add(new Edge(branchEnd, newState, string.Empty));
+                            }
+
+                            branchEndStates[branchEndStates.Count - 1] = newState;
+                        }
+                    }
+
+                    branchesPerGroup.RemoveLast();
+                    decisionStates.RemoveLast();
+
+                    step = Meta.GroupEnd.Length;
+                }
+                // Single-character "zero or more" quantifier
                 else if (pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrMore))
                 {
                     PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);

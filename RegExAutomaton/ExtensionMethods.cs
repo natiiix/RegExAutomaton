@@ -47,6 +47,8 @@ namespace RegExAutomaton
 
         public static void RemoveLast<T>(this List<T> list) => list.RemoveAt(list.Count - 1);
 
+        public static void RemoveLast<T>(this List<T> list, int count) => list.RemoveRange(list.Count - count, count);
+
         public static T Pop<T>(this List<T> list)
         {
             T value = list.Last();
@@ -179,7 +181,8 @@ namespace RegExAutomaton
                 {
                     depth--;
                 }
-                else if ((!zeroDepthOnly || depth == 0) && str.ContainsAt(i, value))
+
+                if ((!zeroDepthOnly || depth == 0) && str.ContainsAt(i, value))
                 {
                     indices.Add(i);
                 }
@@ -245,61 +248,61 @@ namespace RegExAutomaton
             }
         }
 
-        public static List<Group> SplitIntoGroups(this string str)
-        {
-            List<int> groupStarts = str.FindUnescaped(Meta.GroupStart, true);
-            List<int> groupEnds = str.FindUnescaped(Meta.GroupEnd, true);
+        //public static List<Group> SplitIntoGroups(this string str)
+        //{
+        //    List<int> groupStarts = str.FindUnescaped(Meta.GroupStart, true);
+        //    List<int> groupEnds = str.FindUnescaped(Meta.GroupEnd, true);
 
-            if (groupStarts.Count != groupEnds.Count)
-            {
-                throw new ArgumentException();
-            }
+        //    if (groupStarts.Count != groupEnds.Count)
+        //    {
+        //        throw new ArgumentException();
+        //    }
 
-            List<Group> groups = new List<Group>();
+        //    List<Group> groups = new List<Group>();
 
-            int groupCount = groupStarts.Count;
+        //    int groupCount = groupStarts.Count;
 
-            if (groupCount == 0)
-            {
-                return null;
-            }
+        //    if (groupCount == 0)
+        //    {
+        //        return null;
+        //    }
 
-            int nextGroupStart = 0;
+        //    int nextGroupStart = 0;
 
-            for (int i = 0; i < groupCount; i++)
-            {
-                int start = groupStarts[i];
+        //    for (int i = 0; i < groupCount; i++)
+        //    {
+        //        int start = groupStarts[i];
 
-                if (start > nextGroupStart)
-                {
-                    groups.Add(new Group(str.SubstringBetween(nextGroupStart, start - 1), false));
-                }
+        //        if (start > nextGroupStart)
+        //        {
+        //            groups.Add(new Group(str.SubstringBetween(nextGroupStart, start - 1), false));
+        //        }
 
-                int end = groupEnds[i];
-                int innerStart = start + 1;
+        //        int end = groupEnds[i];
+        //        int innerStart = start + 1;
 
-                bool nonCapture = str.ContainsAt(start + 1, Meta.NonCapture);
+        //        bool nonCapture = str.ContainsAt(start + 1, Meta.NonCapture);
 
-                if (nonCapture)
-                {
-                    innerStart += Meta.NonCapture.Length;
-                }
+        //        if (nonCapture)
+        //        {
+        //            innerStart += Meta.NonCapture.Length;
+        //        }
 
-                Quantifier quantifier = str.GetQuantifier(end);
+        //        Quantifier quantifier = str.GetQuantifier(end);
 
-                string value = str.SubstringBetween(innerStart, end - 1);
+        //        string value = str.SubstringBetween(innerStart, end - 1);
 
-                groups.Add(new Group(value, !nonCapture, quantifier));
+        //        groups.Add(new Group(value, !nonCapture, quantifier));
 
-                nextGroupStart = end + 1 + quantifier.GetString().Length;
-            }
+        //        nextGroupStart = end + 1 + quantifier.GetString().Length;
+        //    }
 
-            if (nextGroupStart < str.Length)
-            {
-                groups.Add(new Group(str.Substring(nextGroupStart), true));
-            }
+        //    if (nextGroupStart < str.Length)
+        //    {
+        //        groups.Add(new Group(str.Substring(nextGroupStart), true));
+        //    }
 
-            return groups;
-        }
+        //    return groups;
+        //}
     }
 }
