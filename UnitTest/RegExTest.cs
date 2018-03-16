@@ -115,6 +115,18 @@ namespace UnitTest
                     Assert.IsNotNull(match);
                 }
             }
+
+            {
+                RegEx regex = new RegEx("^x (a*b|(cd|ef)*|hello) y$");
+
+                string[] strings = { "x b y", "x ab y", "x aaaab y", "x  y", "x cd y", "x ef y", "x cdefcdef y", "x hello y" };
+
+                foreach (string str in strings)
+                {
+                    Match match = regex.Match(str);
+                    Assert.IsNotNull(match);
+                }
+            }
         }
     }
 }

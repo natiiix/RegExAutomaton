@@ -192,8 +192,17 @@ namespace RegExAutomaton
                 {
                     PushSequenceIfNotEmpty(ref sequence, ref decisionStates, ref branchEndStates);
 
-                    decisionStates.Add(LastStateIndex);
-                    branchEndStates.Add(LastStateIndex);
+                    int endOfCurrentBranch = branchEndStates.Last();
+
+                    if (decisionStates.Contains(endOfCurrentBranch) && pattern.ContainsAtUnescaped(pattern.FindEndOfGroup(i) + 1, Meta.ZeroOrMore))
+                    {
+                        int newState = AddState();
+                        edges.Add(new Edge(endOfCurrentBranch, newState, string.Empty));
+                        endOfCurrentBranch = newState;
+                    }
+
+                    decisionStates.Add(endOfCurrentBranch);
+                    branchEndStates.Add(endOfCurrentBranch);
                     branchesPerGroup.Add(1);
 
                     step = Meta.GroupStart.Length;
@@ -239,6 +248,9 @@ namespace RegExAutomaton
                     }
                     else
                     {
+                        // TODO: Optimize the non-quantified groups as well.
+                        // Remove all the unnecessary states and edges.
+
                         int branchCount = branchesPerGroup.Last();
 
                         if (branchCount > 1)
@@ -341,5 +353,7 @@ namespace RegExAutomaton
 
             return states[state].Ending && (!fixedEnd || index == str.Length);
         }
+
+        public override string ToString() => $"States: {string.Join(", ", states.Select(x => x.Ending ? $"[{x.Id}]" : x.Id.ToString()))}{Environment.NewLine}Edges:{Environment.NewLine}{string.Join(Environment.NewLine, edges.Select(x => $"{x.Origin} -> \"{x.Value}\" -> {x.Destination}"))}";
     }
 }

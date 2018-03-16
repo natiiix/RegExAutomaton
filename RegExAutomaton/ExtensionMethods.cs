@@ -248,6 +248,37 @@ namespace RegExAutomaton
             }
         }
 
+        public static int FindEndOfGroup(this string pattern, int groupStartIndex)
+        {
+            if (!pattern.ContainsAtUnescaped(groupStartIndex, Meta.GroupStart))
+            {
+                throw new ArgumentException();
+            }
+
+            int depth = 0;
+
+            for (int i = groupStartIndex + 1, len = pattern.Length; i < len; i++)
+            {
+                if (pattern.ContainsAtUnescaped(i, Meta.GroupStart))
+                {
+                    depth++;
+                }
+                else if (pattern.ContainsAtUnescaped(i, Meta.GroupEnd))
+                {
+                    if (depth > 0)
+                    {
+                        depth--;
+                    }
+                    else
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
         //public static List<Group> SplitIntoGroups(this string str)
         //{
         //    List<int> groupStarts = str.FindUnescaped(Meta.GroupStart, true);
