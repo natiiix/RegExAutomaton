@@ -2,6 +2,7 @@
 using Visio = Microsoft.Office.Interop.Visio;
 using VisioAutomation.Models.Layouts.DirectedGraph;
 using VisioAutomation.Shapes;
+using VisioAutomation.Geometry;
 using RegExAutomaton;
 
 namespace RegExVisioDiagram
@@ -47,16 +48,34 @@ namespace RegExVisioDiagram
             for (int i = 0, len = regex.Edges.Count; i < len; i++)
             {
                 Edge edge = regex.Edges[i];
-                string edgeValue = string.IsNullOrEmpty(edge.Value) ? string.Empty : $"\"{edge.Value}\"";
-
-                Shape edgeShape = d.AddShape($"e{i}", edgeValue, basic_stencil, "Diamond");
 
                 const ConnectorType type = ConnectorType.RightAngle;
-                const int beginArrow = 0;
+                const int beginArrow = 20;
                 const int endArrow = 5;
 
-                d.AddConnection($"e{i}_1", shapes[edge.Origin], edgeShape, string.Empty, type, beginArrow, endArrow, string.Empty);
-                d.AddConnection($"e{i}_2", edgeShape, shapes[edge.Destination], string.Empty, type, beginArrow, endArrow, string.Empty);
+                if (string.IsNullOrEmpty(edge.Value))
+                {
+                    d.AddConnection(
+                        $"e{i}",
+                        shapes[edge.Origin],
+                        shapes[edge.Destination],
+                        string.Empty,
+                        type,
+                        beginArrow,
+                        endArrow,
+                        string.Empty
+                    );
+                }
+                else
+                {
+                    string edgeValue = $"\"{edge.Value}\"" + Environment.NewLine + $"[{string.Join(",", edge.CaptureGroups)}]";
+
+                    Shape edgeShape = d.AddShape($"e{i}", edgeValue, basic_stencil, "Diamond");
+                    edgeShape.Size = new Size(2.5, 1.75);
+
+                    d.AddConnection($"e{i}_1", shapes[edge.Origin], edgeShape, string.Empty, type, beginArrow, endArrow, string.Empty);
+                    d.AddConnection($"e{i}_2", edgeShape, shapes[edge.Destination], string.Empty, type, beginArrow, endArrow, string.Empty);
+                }
 
                 //d.AddConnection(
                 //    $"e{i}",
@@ -74,7 +93,7 @@ namespace RegExVisioDiagram
             foreach (Visio.Shape shape in page1.Shapes)
             {
                 Visio.Cell cell = shape.CellsU["Char.Size"];
-                cell.FormulaU = "24 pt";
+                cell.FormulaU = "20 pt";
             }
         }
     }
