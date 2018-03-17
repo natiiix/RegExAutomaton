@@ -317,6 +317,21 @@ namespace RegExAutomaton
                     Edges.Add(new Edge(LastStateIndex, LastStateIndex, pattern[i].ToString(), activeCaptureGroups));
                     step = 1 + Meta.ZeroOrMore.Length;
                 }
+                // Single-character "zero or one" quantifier
+                else if (pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrOne))
+                {
+                    PushSequenceIfNotEmpty(ref sequence, ref branchEndStates, activeCaptureGroups);
+
+                    int branchEnd = branchEndStates.Last();
+                    int newState = AddState();
+
+                    Edges.Add(new Edge(branchEnd, newState, pattern[i].ToString(), activeCaptureGroups));
+                    AddEpsilonEdge(branchEnd, newState);
+
+                    branchEndStates[branchEndStates.Count - 1] = newState;
+
+                    step = 1 + Meta.OneOrMore.Length;
+                }
                 // Unescaped escape character
                 else if (pattern.ContainsAtUnescaped(i, Meta.Escape))
                 {
