@@ -223,125 +223,151 @@ namespace RegExAutomaton
                 {
                     PushSequenceIfNotEmpty(ref sequence, ref branchEndStates, activeCaptureGroups);
 
-                    bool zeroOrMoreGroup = pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrMore);
+                    // Search for quantifier
+                    Quantifier quant = pattern.GetQuantifier(i);
 
-                    if (zeroOrMoreGroup)
+                    switch (quant)
                     {
-                        int lastDecisionState = decisionStates.Last();
-
-                        for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
-                        {
-                            int branchEnd = branchEndStates.Pop();
-
-                            if (Edges.Exists(x => x.Origin == branchEnd))
+                        case Quantifier.None:
                             {
-                                AddEpsilonEdge(branchEnd, lastDecisionState);
-                            }
-                            else
-                            {
-                                foreach (Edge edge in Edges.Where(x => x.Destination == branchEnd))
+                                int branchCount = branchesPerGroup.Last();
+
+                                if (branchCount == 1)
                                 {
-                                    edge.ChangeDestination(lastDecisionState);
+                                    int branchEnd = branchEndStates.Pop();
+                                    branchEndStates[branchEndStates.Count - 1] = branchEnd;
                                 }
-
-                                States.RemoveAt(branchEnd);
-
-                                for (int k = 0, stateCount = States.Count; k < stateCount; k++)
+                                else if (branchCount > 1)
                                 {
-                                    if (States[k].Id != k)
+                                    int newState = AddState();
+
+                                    for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
                                     {
-                                        throw new Exception();
+                                        int branchEnd = branchEndStates.Pop();
+                                        AddEpsilonEdge(branchEnd, newState);
+                                    }
+
+                                    branchEndStates[branchEndStates.Count - 1] = newState;
+                                }
+                                else
+                                {
+                                    throw new Exception();
+                                }
+                            }
+                            break;
+
+                        case Quantifier.ZeroOrMore:
+                            {
+                                int lastDecisionState = decisionStates.Last();
+
+                                for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
+                                {
+                                    int branchEnd = branchEndStates.Pop();
+
+                                    if (Edges.Exists(x => x.Origin == branchEnd))
+                                    {
+                                        AddEpsilonEdge(branchEnd, lastDecisionState);
+                                    }
+                                    else
+                                    {
+                                        foreach (Edge edge in Edges.Where(x => x.Destination == branchEnd))
+                                        {
+                                            edge.ChangeDestination(lastDecisionState);
+                                        }
+
+                                        States.RemoveAt(branchEnd);
+
+                                        for (int k = 0, stateCount = States.Count; k < stateCount; k++)
+                                        {
+                                            if (States[k].Id != k)
+                                            {
+                                                throw new Exception();
+                                            }
+                                        }
                                     }
                                 }
+
+                                branchEndStates[branchEndStates.Count - 1] = decisionStates.Last();
                             }
-                        }
+                            break;
 
-                        branchEndStates[branchEndStates.Count - 1] = decisionStates.Last();
-                    }
-                    else
-                    {
-                        int branchCount = branchesPerGroup.Last();
+                        case Quantifier.ZeroOrOne:
+                            throw new NotImplementedException();
 
-                        if (branchCount == 1)
-                        {
-                            int branchEnd = branchEndStates.Pop();
-                            branchEndStates[branchEndStates.Count - 1] = branchEnd;
-                        }
-                        else if (branchCount > 1)
-                        {
-                            int newState = AddState();
+                        case Quantifier.OneOrMore:
+                            throw new NotImplementedException();
 
-                            for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
-                            {
-                                int branchEnd = branchEndStates.Pop();
-                                AddEpsilonEdge(branchEnd, newState);
-                            }
-
-                            branchEndStates[branchEndStates.Count - 1] = newState;
-                        }
-                        else
-                        {
+                        default:
                             throw new Exception();
-                        }
                     }
 
+                    // Clean up remainders of the group
                     branchesPerGroup.RemoveLast();
                     decisionStates.RemoveLast();
 
+                    // If it was a capture group, remove it from the list
                     if (captureGroupEnds.Contains(i))
                     {
                         activeCaptureGroups.RemoveLast();
                     }
 
-                    step = Meta.GroupEnd.Length;
-
-                    if (zeroOrMoreGroup)
-                    {
-                        step += Meta.ZeroOrMore.Length;
-                    }
-                }
-                // Single-character "zero or more" quantifier
-                else if (pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrMore))
-                {
-                    PushSequenceIfNotEmpty(ref sequence, ref branchEndStates, activeCaptureGroups);
-
-                    // Creating the "zero or more" quantifier loop on a decision state
-                    // would result in "a*|zyx" matching "aaazyx"
-                    if (decisionStates.Contains(LastStateIndex))
-                    {
-                        // It is necessary to add an epsilon edge leading to the "zero or more" quantifier loop
-                        AddEpsilonEdge(LastStateIndex, AddState());
-                        branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
-                    }
-
-                    Edges.Add(new Edge(LastStateIndex, LastStateIndex, pattern[i].ToString(), activeCaptureGroups));
-                    step = 1 + Meta.ZeroOrMore.Length;
-                }
-                // Single-character "zero or one" quantifier
-                else if (pattern.ContainsAtUnescaped(i + 1, Meta.ZeroOrOne))
-                {
-                    PushSequenceIfNotEmpty(ref sequence, ref branchEndStates, activeCaptureGroups);
-
-                    int branchEnd = branchEndStates.Last();
-                    int newState = AddState();
-
-                    Edges.Add(new Edge(branchEnd, newState, pattern[i].ToString(), activeCaptureGroups));
-                    AddEpsilonEdge(branchEnd, newState);
-
-                    branchEndStates[branchEndStates.Count - 1] = newState;
-
-                    step = 1 + Meta.OneOrMore.Length;
+                    step = Meta.GroupEnd.Length + quant.GetString().Length;
                 }
                 // Unescaped escape character
                 else if (pattern.ContainsAtUnescaped(i, Meta.Escape))
                 {
                     step = 1;
                 }
-                // Literal or escaped character
+                // Single character
                 else
                 {
-                    sequence += pattern[i];
-                    step = 1;
+                    Quantifier quant = pattern.GetQuantifier(i);
+
+                    switch (quant)
+                    {
+                        case Quantifier.None:
+                            sequence += pattern[i];
+                            break;
+
+                        case Quantifier.ZeroOrMore:
+                            {
+                                PushSequenceIfNotEmpty(ref sequence, ref branchEndStates, activeCaptureGroups);
+
+                                // Creating the "zero or more" quantifier loop on a decision state
+                                // would result in "a*|zyx" matching "aaazyx"
+                                if (decisionStates.Contains(LastStateIndex))
+                                {
+                                    // It is necessary to add an epsilon edge leading to the "zero or more" quantifier loop
+                                    AddEpsilonEdge(LastStateIndex, AddState());
+                                    branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
+                                }
+
+                                Edges.Add(new Edge(LastStateIndex, LastStateIndex, pattern[i].ToString(), activeCaptureGroups));
+                            }
+                            break;
+
+                        case Quantifier.ZeroOrOne:
+                            {
+                                PushSequenceIfNotEmpty(ref sequence, ref branchEndStates, activeCaptureGroups);
+
+                                int branchEnd = branchEndStates.Last();
+                                int newState = AddState();
+
+                                Edges.Add(new Edge(branchEnd, newState, pattern[i].ToString(), activeCaptureGroups));
+                                AddEpsilonEdge(branchEnd, newState);
+
+                                branchEndStates[branchEndStates.Count - 1] = newState;
+                            }
+                            break;
+
+                        case Quantifier.OneOrMore:
+                            throw new NotImplementedException();
+
+                        default:
+                            throw new Exception();
+                    }
+
+                    step = 1 + quant.GetString().Length;
                 }
             }
 

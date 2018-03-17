@@ -222,15 +222,15 @@ namespace RegExAutomaton
         {
             int quantIdx = index + 1;
 
-            if (str.ContainsAt(quantIdx, Meta.ZeroOrOne))
+            if (str.ContainsAtUnescaped(quantIdx, Meta.ZeroOrOne))
             {
                 return Quantifier.ZeroOrOne;
             }
-            else if (str.ContainsAt(quantIdx, Meta.ZeroOrMore))
+            else if (str.ContainsAtUnescaped(quantIdx, Meta.ZeroOrMore))
             {
                 return Quantifier.ZeroOrMore;
             }
-            else if (str.ContainsAt(quantIdx, Meta.OneOrMore))
+            else if (str.ContainsAtUnescaped(quantIdx, Meta.OneOrMore))
             {
                 return Quantifier.OneOrMore;
             }
