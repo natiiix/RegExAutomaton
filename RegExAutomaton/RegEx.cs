@@ -248,9 +248,6 @@ namespace RegExAutomaton
                     }
                     else
                     {
-                        // TODO: Optimize the non-quantified groups as well.
-                        // Remove all the unnecessary states and edges.
-
                         int branchCount = branchesPerGroup.Last();
 
                         if (branchCount > 1)

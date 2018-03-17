@@ -3,7 +3,6 @@ using Visio = Microsoft.Office.Interop.Visio;
 using VisioAutomation.Models.Layouts.DirectedGraph;
 using VisioAutomation.Shapes;
 using RegExAutomaton;
-using VisioAutomation.ShapeSheet;
 
 namespace RegExVisioDiagram
 {
