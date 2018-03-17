@@ -144,5 +144,16 @@ namespace UnitTest
             Assert.AreEqual("bcd", match.Captures[0]);
             Assert.AreEqual("d", match.Captures[1]);
         }
+
+        [TestMethod]
+        public void SingleCharacterZeroOrOneTest()
+        {
+            RegEx regex = new RegEx("^ab?c$");
+
+            Assert.IsNotNull(regex.Match("ac"));
+            Assert.IsNotNull(regex.Match("abc"));
+
+            Assert.IsNull(regex.Match("abbc"));
+        }
     }
 }
