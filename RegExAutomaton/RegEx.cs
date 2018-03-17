@@ -9,12 +9,12 @@ namespace RegExAutomaton
         private bool fixedStart;
         private bool fixedEnd;
 
-        private List<State> states;
-        private List<Edge> edges;
+        public List<State> States { get; private set; }
+        public List<Edge> Edges { get; private set; }
 
-        private int startingState;
+        public int StartingState { get; private set; }
 
-        private int LastStateIndex { get => states.Count - 1; }
+        private int LastStateIndex { get => States.Count - 1; }
 
         public RegEx(string pattern)
         {
@@ -37,7 +37,7 @@ namespace RegExAutomaton
 
         private int AddState()
         {
-            states.Add(new State(states.Count));
+            States.Add(new State(States.Count));
             return LastStateIndex;
         }
 
@@ -164,13 +164,13 @@ namespace RegExAutomaton
 
         private void ProcessPattern(string pattern)
         {
-            states = new List<State>();
-            edges = new List<Edge>();
+            States = new List<State>();
+            Edges = new List<Edge>();
 
-            startingState = AddState();
+            StartingState = AddState();
 
-            List<int> decisionStates = new List<int>() { startingState };
-            List<int> branchEndStates = new List<int>() { startingState };
+            List<int> decisionStates = new List<int>() { StartingState };
+            List<int> branchEndStates = new List<int>() { StartingState };
             List<int> branchesPerGroup = new List<int>() { 1 };
 
             string sequence = string.Empty;
@@ -197,7 +197,7 @@ namespace RegExAutomaton
                     if (decisionStates.Contains(endOfCurrentBranch) && pattern.ContainsAtUnescaped(pattern.FindEndOfGroup(i) + 1, Meta.ZeroOrMore))
                     {
                         int newState = AddState();
-                        edges.Add(new Edge(endOfCurrentBranch, newState, string.Empty));
+                        Edges.Add(new Edge(endOfCurrentBranch, newState, string.Empty));
                         endOfCurrentBranch = newState;
                     }
 
@@ -220,22 +220,22 @@ namespace RegExAutomaton
                         {
                             int branchEnd = branchEndStates.Pop();
 
-                            if (edges.Exists(x => x.Origin == branchEnd))
+                            if (Edges.Exists(x => x.Origin == branchEnd))
                             {
-                                edges.Add(new Edge(branchEnd, lastDecisionState, string.Empty));
+                                Edges.Add(new Edge(branchEnd, lastDecisionState, string.Empty));
                             }
                             else
                             {
-                                foreach (Edge edge in edges.Where(x => x.Destination == branchEnd))
+                                foreach (Edge edge in Edges.Where(x => x.Destination == branchEnd))
                                 {
                                     edge.ChangeDestination(lastDecisionState);
                                 }
 
-                                states.RemoveAt(branchEnd);
+                                States.RemoveAt(branchEnd);
 
-                                for (int k = 0, stateCount = states.Count; k < stateCount; k++)
+                                for (int k = 0, stateCount = States.Count; k < stateCount; k++)
                                 {
-                                    if (states[k].Id != k)
+                                    if (States[k].Id != k)
                                     {
                                         throw new Exception();
                                     }
@@ -260,7 +260,7 @@ namespace RegExAutomaton
                             for (int j = 0, count = branchesPerGroup.Last(); j < count; j++)
                             {
                                 int branchEnd = branchEndStates.Pop();
-                                edges.Add(new Edge(branchEnd, newState, string.Empty));
+                                Edges.Add(new Edge(branchEnd, newState, string.Empty));
                             }
 
                             branchEndStates[branchEndStates.Count - 1] = newState;
@@ -282,11 +282,11 @@ namespace RegExAutomaton
                     if (decisionStates.Contains(LastStateIndex))
                     {
                         // It is necessary to add an epsilon edge leading to the "zero or more" quantifier loop
-                        edges.Add(new Edge(LastStateIndex, AddState(), string.Empty));
+                        Edges.Add(new Edge(LastStateIndex, AddState(), string.Empty));
                         branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
                     }
 
-                    edges.Add(new Edge(LastStateIndex, LastStateIndex, pattern[i].ToString()));
+                    Edges.Add(new Edge(LastStateIndex, LastStateIndex, pattern[i].ToString()));
                     step = 1 + Meta.ZeroOrMore.Length;
                 }
                 // Unescaped escape character
@@ -307,7 +307,7 @@ namespace RegExAutomaton
             // Mark the end state of each branch as an ending state
             foreach (int endState in branchEndStates)
             {
-                states[endState].Ending = true;
+                States[endState].Ending = true;
             }
         }
 
@@ -315,7 +315,7 @@ namespace RegExAutomaton
         {
             if (sequence != string.Empty)
             {
-                edges.Add(new Edge(branchEndStates.Last(), AddState(), sequence));
+                Edges.Add(new Edge(branchEndStates.Last(), AddState(), sequence));
                 branchEndStates[branchEndStates.Count - 1] = LastStateIndex;
                 sequence = string.Empty;
             }
@@ -327,7 +327,7 @@ namespace RegExAutomaton
 
             for (int i = 0, len = (fixedStart ? 0 : str.Length); i <= len; i++)
             {
-                if (RecursiveMatch(str, i, startingState, ref fullCapture))
+                if (RecursiveMatch(str, i, StartingState, ref fullCapture))
                 {
                     return new Match(fullCapture, i);
                 }
@@ -340,7 +340,7 @@ namespace RegExAutomaton
 
         private bool RecursiveMatch(string str, int index, int state, ref string fullCapture)
         {
-            IEnumerable<Edge> availableEdges = edges.Where(x => x.Origin == state);
+            IEnumerable<Edge> availableEdges = Edges.Where(x => x.Origin == state);
 
             foreach (Edge edge in availableEdges)
             {
@@ -351,9 +351,9 @@ namespace RegExAutomaton
                 }
             }
 
-            return states[state].Ending && (!fixedEnd || index == str.Length);
+            return States[state].Ending && (!fixedEnd || index == str.Length);
         }
 
-        public override string ToString() => $"States: {string.Join(", ", states.Select(x => x.Ending ? $"[{x.Id}]" : x.Id.ToString()))}{Environment.NewLine}Edges:{Environment.NewLine}{string.Join(Environment.NewLine, edges.Select(x => $"{x.Origin} -> \"{x.Value}\" -> {x.Destination}"))}";
+        public override string ToString() => $"States: {string.Join(", ", States.Select(x => x.Ending ? $"[{x.Id}]" : x.Id.ToString()))}{Environment.NewLine}Edges:{Environment.NewLine}{string.Join(Environment.NewLine, Edges.Select(x => $"{x.Origin} -> \"{x.Value}\" -> {x.Destination}"))}";
     }
 }
