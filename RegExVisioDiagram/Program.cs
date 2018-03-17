@@ -1,9 +1,9 @@
-﻿using System;
-using Visio = Microsoft.Office.Interop.Visio;
+﻿using RegExAutomaton;
+using System;
+using VisioAutomation.Geometry;
 using VisioAutomation.Models.Layouts.DirectedGraph;
 using VisioAutomation.Shapes;
-using VisioAutomation.Geometry;
-using RegExAutomaton;
+using Visio = Microsoft.Office.Interop.Visio;
 
 namespace RegExVisioDiagram
 {
