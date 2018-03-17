@@ -1,18 +1,20 @@
-﻿namespace RegExAutomaton
+﻿using System.Collections.Generic;
+
+namespace RegExAutomaton
 {
     public class Edge
     {
         public int Origin { get; private set; }
         public int Destination { get; private set; }
         public string Value { get; private set; }
-        public int CaptureGroup { get; private set; }
+        public int[] CaptureGroups { get; private set; }
 
-        public Edge(int origin, int destination, string value, int captureGroup = -1)
+        public Edge(int origin, int destination, string value, IEnumerable<int> captureGroups)
         {
             Origin = origin;
             Destination = destination;
             Value = value;
-            CaptureGroup = captureGroup;
+            CaptureGroups = captureGroups.CopyToArray();
         }
 
         public void ChangeDestination(int destination)

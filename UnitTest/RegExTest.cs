@@ -128,5 +128,21 @@ namespace UnitTest
                 }
             }
         }
+
+        [TestMethod]
+        public void CaptureGroupTest()
+        {
+            RegEx regex = new RegEx("^a(b(?:c(d)))$");
+            Match match = regex.Match("abcd");
+
+            Assert.IsNotNull(match);
+
+            Assert.AreEqual("abcd", match.Value);
+
+            Assert.AreEqual(2, match.Captures.Length);
+
+            Assert.AreEqual("bcd", match.Captures[0]);
+            Assert.AreEqual("d", match.Captures[1]);
+        }
     }
 }

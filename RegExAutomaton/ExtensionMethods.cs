@@ -45,6 +45,19 @@ namespace RegExAutomaton
             }
         }
 
+        public static T[] CopyToArray<T>(this IEnumerable<T> enumerable)
+        {
+            T[] arr = new T[enumerable.Count()];
+            int idx = 0;
+
+            foreach (T item in enumerable)
+            {
+                arr[idx++] = item;
+            }
+
+            return arr;
+        }
+
         public static void RemoveLast<T>(this List<T> list) => list.RemoveAt(list.Count - 1);
 
         public static void RemoveLast<T>(this List<T> list, int count) => list.RemoveRange(list.Count - count, count);

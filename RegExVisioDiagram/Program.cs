@@ -37,9 +37,21 @@ namespace RegExVisioDiagram
 
             for (int i = 0, len = regex.States.Count; i < len; i++)
             {
+                string stateInfo = $"State {i}";
+
+                if (i == regex.StartingState)
+                {
+                    stateInfo += Environment.NewLine + "[START]";
+                }
+
+                if (regex.States[i].Ending)
+                {
+                    stateInfo += Environment.NewLine + "[END]";
+                }
+
                 shapes[i] = d.AddShape(
                     $"s{i}",
-                    $"State {i}" + (i == regex.StartingState ? Environment.NewLine + "[START]" : regex.States[i].Ending ? Environment.NewLine + "[END]" : string.Empty),
+                    stateInfo,
                     basic_stencil,
                     "Rectangle"
                 );
